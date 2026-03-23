@@ -376,6 +376,68 @@ with st.sidebar:
     
     st.markdown("---")
     
+    # ✅ NEW: Model Strategy Selector
+    st.subheader("🤖 AI Model Strategy")
+    
+    model_strategy = st.selectbox(
+        "Model Selection",
+        [
+            "🚀 Auto-Optimize (Recommended)",
+            "⚡ Speed Priority",
+            "🧠 Quality Priority",
+            "⚖️ Balanced",
+        ],
+        index=0,
+        help="Auto-Optimize uses the best model for each task automatically"
+    )
+    
+    # Show what models will be used
+    if model_strategy == "🚀 Auto-Optimize (Recommended)":
+        with st.expander("ℹ️ Models Used", expanded=False):
+            st.markdown("""
+            **Intelligent Multi-Model Approach:**
+            - 📊 Data Extraction: `llama-3.3-70b-versatile`
+            - 💭 Strategic Analysis: `llama-3.1-70b-specdec`
+            - ⚡ Quick Tasks: `llama-3.3-70b-versatile`
+            
+            **Benefits:**
+            - ✅ Best quality for each task
+            - ✅ Optimal speed/quality balance
+            - ✅ Still 100% free!
+            """)
+    elif model_strategy == "⚡ Speed Priority":
+        with st.expander("ℹ️ Models Used", expanded=False):
+            st.markdown("""
+            **All Tasks:** `llama-3.3-70b-versatile`
+            
+            **Benefits:**
+            - ⚡ Fastest results
+            - ✅ Good quality
+            - ✅ 100% free!
+            """)
+    elif model_strategy == "🧠 Quality Priority":
+        with st.expander("ℹ️ Models Used", expanded=False):
+            st.markdown("""
+            **All Tasks:** `llama-3.1-70b-specdec`
+            
+            **Benefits:**
+            - 🎯 Highest quality
+            - 🧠 Best reasoning
+            - ✅ 100% free!
+            """)
+    elif model_strategy == "⚖️ Balanced":
+        with st.expander("ℹ️ Models Used", expanded=False):
+            st.markdown("""
+            **All Tasks:** `llama-3.3-70b-versatile`
+            
+            **Benefits:**
+            - ⚖️ Speed + Quality
+            - ✅ Great all-around
+            - ✅ 100% free!
+            """)
+    
+    st.markdown("---")
+    
     # Stats (if available)
     if 'latest_result' in st.session_state:
         st.subheader("📊 Quick Stats")
