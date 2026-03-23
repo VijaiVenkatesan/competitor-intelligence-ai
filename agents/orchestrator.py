@@ -14,11 +14,11 @@ async def run_research(
     progress_callback: Optional[Callable] = None
 ) -> dict:
     """
-    Simplified orchestrator for Streamlit Cloud
-    Runs agents sequentially to avoid resource limits
+    Main orchestrator for competitive research
+    Runs agents sequentially for Streamlit Cloud compatibility
     """
     
-    logger.info(f"Starting research for {company_name}")
+    logger.info(f"🚀 Starting research for: {company_name}")
     
     result = {
         'company_name': company_name,
@@ -38,59 +38,51 @@ async def run_research(
         product_agent = ProductAgent()
         synthesis_agent = SynthesisAgent()
         
-        # Step 1: Web Research (20%)
-        if progress_callback:
-            progress_callback(10, "Starting web research...")
+        # Progress tracking helper
+        def update_progress(pct: int, msg: str):
+            logger.info(f"Progress: {pct}% - {msg}")
+            if progress_callback:
+                progress_callback(pct, msg)
         
+        # STEP 1: Web Research (0-25%)
+        update_progress(5, "🌐 Researching company website...")
         web_result = await web_agent.execute({'company_name': company_name})
         result['web_research'] = web_result
         
-        website_url = web_result.get('metadata', {}).get('website') if web_result.get('success') else None
+        website_url = None
+        if web_result.get('success'):
+            website_url = web_result.get('metadata', {}).get('website')
         
-        if progress_callback:
-            progress_callback(20, "Web research complete")
+        update_progress(25, "✅ Web research complete")
         
-        # Step 2: Social Media (40%)
-        if progress_callback:
-            progress_callback(30, "Analyzing social media...")
-        
+        # STEP 2: Social Media (25-45%)
+        update_progress(30, "📱 Analyzing social media presence...")
         social_result = await social_agent.execute({
             'company_name': company_name,
             'website_url': website_url
         })
         result['social_media'] = social_result
+        update_progress(45, "✅ Social media analysis complete")
         
-        if progress_callback:
-            progress_callback(40, "Social media analysis complete")
-        
-        # Step 3: Financial (60%)
-        if progress_callback:
-            progress_callback(50, "Analyzing financials...")
-        
+        # STEP 3: Financial (45-65%)
+        update_progress(50, "💰 Gathering financial data...")
         financial_result = await financial_agent.execute({
             'company_name': company_name
         })
         result['financial'] = financial_result
+        update_progress(65, "✅ Financial analysis complete")
         
-        if progress_callback:
-            progress_callback(60, "Financial analysis complete")
-        
-        # Step 4: Product (80%)
-        if progress_callback:
-            progress_callback(70, "Analyzing product...")
-        
+        # STEP 4: Product (65-85%)
+        update_progress(70, "🎨 Analyzing product offering...")
         product_result = await product_agent.execute({
             'company_name': company_name,
             'website_url': website_url
         })
         result['product'] = product_result
+        update_progress(85, "✅ Product analysis complete")
         
-        if progress_callback:
-            progress_callback(80, "Product analysis complete")
-        
-        # Step 5: Synthesis (100%)
-        if progress_callback:
-            progress_callback(90, "Synthesizing insights...")
+        # STEP 5: Synthesis (85-100%)
+        update_progress(90, "🧠 Synthesizing insights...")
         
         agent_outputs = {
             'web_research': web_result,
@@ -103,15 +95,15 @@ async def run_research(
             'company_name': company_name,
             'agent_outputs': agent_outputs
         })
+        
         result['synthesis'] = synthesis_result.get('data', {})
         
-        if progress_callback:
-            progress_callback(100, "Complete!")
+        update_progress(100, "✅ Research complete!")
         
-        logger.info(f"Research complete for {company_name}")
+        logger.info(f"✅ Research completed successfully for {company_name}")
         
         return result
         
     except Exception as e:
-        logger.error(f"Research failed: {e}")
+        logger.error(f"❌ Research failed: {e}")
         raise
