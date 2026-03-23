@@ -1,45 +1,39 @@
 from agents.base_agent import BaseAgent
 from typing import Dict, Any
 from utils.logger import logger
+import json
 
 
 class FinancialAgent(BaseAgent):
-    """Agent for financial analysis"""
+    """Financial analysis agent"""
     
     def __init__(self):
         super().__init__("FinancialAgent")
     
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze financial data"""
-        
         await self._log_execution(context)
         company_name = context.get('company_name')
         
         try:
-            prompt = f"""Provide financial analysis for {company_name} based on public knowledge.
+            prompt = f"""Provide financial analysis for {company_name} based on publicly available knowledge.
 
-Include:
-1. Company type (public/private)
-2. Estimated funding/revenue (if known)
-3. Recent funding rounds (if any)
-4. Growth stage (early/growth/mature)
-5. Financial health assessment
-6. Key investors (if known)
+Return JSON with these exact fields:
+- company_type: "public" or "private"
+- funding_estimate: funding amount string (e.g., "$100M Series C") or "Unknown"
+- growth_stage: "early", "growth", or "mature"
+- health_score: integer 0-100
+- assessment: 2-3 sentence financial summary
+- key_investors: list of investor names or empty list"""
 
-Return as JSON with fields: company_type, funding_estimate, growth_stage, health_score (0-100), assessment"""
-
-            # ✅ USE "fast" model for quick financial extraction
             response = await self.llm.generate(
                 prompt=prompt,
-                system_prompt="You are a financial analyst. Provide realistic estimates based on publicly known information.",
+                system_prompt="You are a financial analyst. Provide realistic estimates based on publicly known information. Always return valid JSON.",
                 temperature=0.3,
                 json_mode=True,
-                model_type=self._get_model_type("structured")
+                task_type="fast"
             )
             
-            import json
             financial_data = json.loads(response)
-            
             return self._create_result(True, financial_data)
             
         except Exception as e:
@@ -48,7 +42,10 @@ Return as JSON with fields: company_type, funding_estimate, growth_stage, health
                 True,
                 {
                     "company_type": "Unknown",
+                    "funding_estimate": "Unknown",
+                    "growth_stage": "Unknown",
                     "health_score": 50,
-                    "assessment": "Limited financial data available"
+                    "assessment": "Limited financial data available for analysis.",
+                    "key_investors": []
                 }
             )
