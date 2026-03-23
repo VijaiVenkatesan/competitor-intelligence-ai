@@ -11,18 +11,25 @@ from utils.logger import logger
 async def run_research(
     company_name: str,
     depth: str = "standard",
+    model_strategy: str = "auto",  # ✅ NEW PARAMETER
     progress_callback: Optional[Callable] = None
 ) -> dict:
     """
     Main orchestrator for competitive research
-    Runs agents sequentially for Streamlit Cloud compatibility
+    
+    Args:
+        company_name: Company to research
+        depth: Research depth (quick/standard/deep)
+        model_strategy: Model selection strategy (auto/speed/quality/balanced)
+        progress_callback: Progress update function
     """
     
-    logger.info(f"🚀 Starting research for: {company_name}")
+    logger.info(f"🚀 Starting research for: {company_name} (Strategy: {model_strategy})")
     
     result = {
         'company_name': company_name,
         'depth': depth,
+        'model_strategy': model_strategy,
         'web_research': {},
         'social_media': {},
         'financial': {},
@@ -31,14 +38,19 @@ async def run_research(
     }
     
     try:
-        # Initialize agents
+        # Initialize agents with model strategy
         web_agent = WebResearchAgent()
         social_agent = SocialMediaAgent()
         financial_agent = FinancialAgent()
         product_agent = ProductAgent()
         synthesis_agent = SynthesisAgent()
         
-        # Progress tracking helper
+        # Set model strategy for each agent
+        _apply_model_strategy(
+            model_strategy,
+            [web_agent, social_agent, financial_agent, product_agent, synthesis_agent]
+        )
+        
         def update_progress(pct: int, msg: str):
             logger.info(f"Progress: {pct}% - {msg}")
             if progress_callback:
@@ -107,3 +119,27 @@ async def run_research(
     except Exception as e:
         logger.error(f"❌ Research failed: {e}")
         raise
+
+
+def _apply_model_strategy(strategy: str, agents: list):
+    """Apply model strategy to all agents"""
+    
+    # Map UI strategy to model preferences
+    strategy_map = {
+        "auto": "auto",           # Each agent uses optimal model
+        "speed": "fast",          # All agents use fast model
+        "quality": "smart",       # All agents use smart model
+        "balanced": "fast"        # All agents use balanced model
+    }
+    
+    model_pref = strategy_map.get(strategy, "auto")
+    
+    if model_pref == "auto":
+        # Keep default behavior (already optimized per agent)
+        logger.info("🎯 Using auto-optimized model selection")
+        return
+    
+    # Override all agents to use same model
+    for agent in agents:
+        agent.preferred_model = model_pref
+        logger.info(f"📝 Set {agent.name} to use '{model_pref}' model")
