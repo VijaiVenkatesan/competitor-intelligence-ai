@@ -133,7 +133,7 @@ class SocialMediaAgent(BaseAgent):
                 prompt=prompt,
                 system_prompt="You are a social media analyst. If data is limited, provide general insights.",
                 schema=SOCIAL_SENTIMENT_SCHEMA,
-                model_type="fast"  # ✅ Optimized for speed
+                model_type=self._get_model_type("structured")
             )
             return synthesis
             
