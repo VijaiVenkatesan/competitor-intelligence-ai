@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 import json
 
-# Page config
+# Must be first Streamlit command
 st.set_page_config(
     page_title="AI Competitor Intelligence",
     page_icon="🔍",
@@ -12,12 +12,40 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Custom CSS
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 3rem;
+        font-weight: bold;
+        background: linear-gradient(90deg, #2c5aa0 0%, #1e3a8a 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+    }
+    .subtitle {
+        color: #666;
+        font-size: 1.2rem;
+        margin-bottom: 2rem;
+    }
+    .metric-card {
+        background: #f0f2f6;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border-left: 4px solid #2c5aa0;
+    }
+    .stDownloadButton button {
+        width: 100%;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Title
-st.title("🔍 AI Competitor Intelligence")
-st.markdown("*Autonomous market research powered by 100% open-source AI*")
+st.markdown('<h1 class="main-header">🔍 AI Competitor Intelligence</h1>', unsafe_allow_html=True)
+st.markdown('<p class="subtitle">Autonomous market research powered by 100% open-source AI</p>', unsafe_allow_html=True)
 st.markdown("---")
 
-# Sidebar
+# Sidebar Configuration
 with st.sidebar:
     st.header("⚙️ Configuration")
     
@@ -25,159 +53,256 @@ with st.sidebar:
     groq_api_key = st.text_input(
         "Groq API Key",
         type="password",
-        help="Get free API key at https://console.groq.com",
+        help="Get your free API key at console.groq.com",
         value=os.getenv("GROQ_API_KEY", "")
     )
     
     if not groq_api_key:
-        st.warning("⚠️ Please enter your Groq API key to start")
-        st.markdown("[Get Free API Key →](https://console.groq.com)")
+        st.error("⚠️ Groq API Key Required")
+        st.markdown("""
+        **Get your FREE API key:**
+        1. Visit [console.groq.com](https://console.groq.com)
+        2. Sign up (takes 30 seconds)
+        3. Copy your API key
+        4. Paste it above
+        
+        **It's 100% free!** No credit card needed.
+        """)
         st.stop()
     
-    # Save to environment
+    # Set environment variable
     os.environ["GROQ_API_KEY"] = groq_api_key
     
     st.success("✅ API Key configured")
     
     st.markdown("---")
     
-    # Research depth
-    depth = st.selectbox(
-        "Research Depth",
-        ["Quick (2-3 min)", "Standard (5-7 min)", "Deep (10-15 min)"],
-        index=1
+    # Research settings
+    st.subheader("Research Settings")
+    
+    depth_option = st.selectbox(
+        "Analysis Depth",
+        [
+            "Quick Analysis (2-3 min)",
+            "Standard Analysis (5-7 min)",
+            "Deep Analysis (10-15 min)"
+        ],
+        index=1,
+        help="Deeper analysis takes longer but provides more insights"
     )
     
     depth_mapping = {
-        "Quick (2-3 min)": "quick",
-        "Standard (5-7 min)": "standard",
-        "Deep (10-15 min)": "deep"
+        "Quick Analysis (2-3 min)": "quick",
+        "Standard Analysis (5-7 min)": "standard",
+        "Deep Analysis (10-15 min)": "deep"
     }
+    depth = depth_mapping[depth_option]
     
     st.markdown("---")
-    st.caption("Built with LangChain, Groq, and Streamlit")
+    
+    # Info section
+    with st.expander("ℹ️ About This Tool"):
+        st.markdown("""
+        **What it does:**
+        - Researches company websites
+        - Analyzes social media presence
+        - Evaluates financial health
+        - Assesses product offerings
+        - Generates strategic insights
+        
+        **Technology:**
+        - LLM: Groq (Llama 3.1 70B)
+        - Framework: LangChain
+        - 100% Open Source
+        
+        **Privacy:**
+        - Your API key stays local
+        - No data stored on servers
+        - All processing via Groq API
+        """)
+    
+    st.markdown("---")
+    st.caption("Built with ❤️ using open-source AI")
 
+# Main content tabs
+tab1, tab2, tab3 = st.tabs(["🎯 New Research", "📊 Latest Results", "📖 Examples"])
 
-# Main content
-tab1, tab2, tab3 = st.tabs(["🎯 New Research", "📊 Results", "ℹ️ About"])
-
+# TAB 1: New Research
 with tab1:
-    st.header("Start New Research")
+    st.header("Start New Competitor Research")
     
     col1, col2 = st.columns([3, 1])
     
     with col1:
         company_name = st.text_input(
             "Company Name",
-            placeholder="e.g., Stripe, Notion, Figma, OpenAI",
-            help="Enter the exact company name"
+            placeholder="e.g., Stripe, Notion, Figma, OpenAI, Shopify",
+            help="Enter the exact company name for best results"
         )
     
     with col2:
-        st.write("")
-        st.write("")
-        start_button = st.button("🚀 Start Research", type="primary", use_container_width=True)
+        st.write("")  # Spacing
+        st.write("")  # Spacing
+        start_research = st.button(
+            "🚀 Start Research",
+            type="primary",
+            use_container_width=True
+        )
     
-    if start_button:
-        if not company_name:
-            st.error("❌ Please enter a company name")
+    # Example companies
+    st.caption("**Try these companies:** Stripe • Notion • Figma • Linear • Vercel • Supabase • Replicate")
+    
+    if start_research:
+        if not company_name or len(company_name) < 2:
+            st.error("❌ Please enter a valid company name")
         else:
-            # Import after API key is set
-            from agents.orchestrator import run_research
-            
-            with st.spinner(f"🔍 Researching {company_name}..."):
-                try:
+            # Import orchestrator (after API key is set)
+            try:
+                from agents.orchestrator import run_research
+                
+                with st.spinner(f"🔍 Researching {company_name}..."):
                     # Progress tracking
                     progress_bar = st.progress(0)
-                    status_text = st.empty()
+                    status_container = st.empty()
+                    
+                    def progress_callback(progress: int, status: str):
+                        progress_bar.progress(progress / 100)
+                        status_container.info(f"**Status:** {status}")
                     
                     # Run research
-                    result = asyncio.run(run_research(
-                        company_name=company_name,
-                        depth=depth_mapping[depth],
-                        progress_callback=lambda p, s: (
-                            progress_bar.progress(p/100),
-                            status_text.text(f"Status: {s} ({p}%)")
-                        )
-                    ))
-                    
-                    # Store in session state
-                    st.session_state['latest_result'] = result
-                    st.session_state['latest_company'] = company_name
-                    
-                    st.success("✅ Research complete!")
-                    
-                    # Display results
-                    st.markdown("---")
-                    display_results(result, company_name)
-                    
-                except Exception as e:
-                    st.error(f"❌ Error: {str(e)}")
-                    st.exception(e)
+                    try:
+                        result = asyncio.run(run_research(
+                            company_name=company_name,
+                            depth=depth,
+                            progress_callback=progress_callback
+                        ))
+                        
+                        # Store in session state
+                        st.session_state['latest_result'] = result
+                        st.session_state['latest_company'] = company_name
+                        st.session_state['research_timestamp'] = datetime.now()
+                        
+                        # Clear progress
+                        progress_bar.empty()
+                        status_container.empty()
+                        
+                        st.success(f"✅ Research complete for **{company_name}**!")
+                        
+                        # Display results
+                        st.markdown("---")
+                        display_results(result, company_name)
+                        
+                    except Exception as e:
+                        st.error(f"❌ Research failed: {str(e)}")
+                        st.exception(e)
+                        
+            except ImportError as e:
+                st.error(f"❌ Failed to import research modules: {e}")
+                st.info("Please make sure all agent files are uploaded correctly.")
 
+# TAB 2: Latest Results
 with tab2:
-    st.header("📊 Latest Results")
+    st.header("📊 Latest Research Results")
     
     if 'latest_result' in st.session_state:
         company = st.session_state.get('latest_company', 'Unknown')
         result = st.session_state['latest_result']
+        timestamp = st.session_state.get('research_timestamp', datetime.now())
+        
+        st.info(f"📅 **Company:** {company} | **Generated:** {timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
         
         display_results(result, company)
     else:
-        st.info("👆 Run a research first to see results here")
+        st.info("👈 Run a research from the **New Research** tab first")
+        
+        st.markdown("""
+        ### What you'll get:
+        
+        - 📋 **Executive Summary** - Key insights at a glance
+        - 📊 **SWOT Analysis** - Strengths, Weaknesses, Opportunities, Threats
+        - 💰 **Financial Health** - Funding, growth, stability assessment
+        - 🎨 **Product Analysis** - Features, pricing, market fit
+        - 💡 **Strategic Recommendations** - Actionable next steps
+        - 📥 **Export Options** - Download as JSON or TXT
+        """)
 
+# TAB 3: Examples
 with tab3:
-    st.header("About This Tool")
+    st.header("📖 Example Companies & Use Cases")
     
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("🚀 Tech Startups")
+        st.markdown("""
+        **Great for competitive analysis:**
+        - **Stripe** - Payment processing
+        - **Notion** - Productivity & workspace
+        - **Figma** - Design collaboration
+        - **Linear** - Issue tracking
+        - **Vercel** - Web deployment
+        - **Supabase** - Backend-as-a-service
+        """)
+        
+        st.subheader("🤖 AI Companies")
+        st.markdown("""
+        **Understand AI landscape:**
+        - **OpenAI** - GPT models
+        - **Anthropic** - Claude AI
+        - **Hugging Face** - AI community
+        - **Replicate** - AI model hosting
+        - **Stability AI** - Image generation
+        """)
+    
+    with col2:
+        st.subheader("💼 B2B SaaS")
+        st.markdown("""
+        **Enterprise software analysis:**
+        - **Salesforce** - CRM leader
+        - **HubSpot** - Marketing automation
+        - **Intercom** - Customer messaging
+        - **Zendesk** - Customer support
+        - **Slack** - Team communication
+        """)
+        
+        st.subheader("🛒 E-commerce")
+        st.markdown("""
+        **E-commerce platforms:**
+        - **Shopify** - Online stores
+        - **WooCommerce** - WordPress commerce
+        - **BigCommerce** - Enterprise e-commerce
+        - **Square** - Point of sale
+        """)
+    
+    st.markdown("---")
+    
+    st.subheader("💡 Best Practices")
     st.markdown("""
-    ### 🎯 What it does
+    **For best results:**
     
-    This AI agent automatically researches any company and provides:
+    1. **Use exact company names** - "Stripe" not "Stripe Inc"
+    2. **Start with Standard depth** - Good balance of speed and detail
+    3. **Research competitors together** - Compare 2-3 companies
+    4. **Download results** - Save as JSON for later analysis
+    5. **Verify critical data** - LLM insights should be verified for business decisions
     
-    - 📊 **Company Overview** - Background, size, market position
-    - 💪 **SWOT Analysis** - Strengths, Weaknesses, Opportunities, Threats
-    - 💰 **Financial Health** - Funding, revenue, growth metrics
-    - 🎨 **Product Analysis** - Features, pricing, positioning
-    - 📰 **News & Sentiment** - Recent updates and market perception
-    - 💡 **Strategic Recommendations** - Actionable insights
-    
-    ### 🛠️ Technology Stack
-    
-    - **LLM**: Groq (Llama 3.1 70B) - Lightning fast inference
-    - **Framework**: LangChain - Agent orchestration
-    - **Scraping**: BeautifulSoup, Trafilatura
-    - **UI**: Streamlit
-    
-    ### 🆓 100% Free & Open Source
-    
-    - No vendor lock-in
-    - Runs on free API tiers
-    - Fully customizable
-    - [View on GitHub →](https://github.com/yourusername/competitor-intelligence-ai)
-    
-    ### 🚀 Getting Started
-    
-    1. Get free Groq API key: https://console.groq.com
-    2. Enter API key in sidebar
-    3. Enter company name
-    4. Click "Start Research"
-    
-    ### 📝 Example Companies to Try
-    
-    - **Tech**: Stripe, Notion, Figma, Linear, Vercel
-    - **AI**: OpenAI, Anthropic, Hugging Face, Replicate
-    - **SaaS**: Salesforce, HubSpot, Intercom, Zendesk
-    
-    ---
-    
-    Made with ❤️ using open-source AI
+    **What to do with results:**
+    - 📊 Competitive positioning analysis
+    - 💰 Investor research and due diligence
+    - 🎯 Market entry strategy
+    - 📈 Feature comparison for product roadmap
+    - 💼 Sales intelligence and competitive battlecards
     """)
 
 
 def display_results(result: dict, company_name: str):
-    """Display research results"""
+    """Display research results in structured format"""
     
     synthesis = result.get('synthesis', {})
+    
+    if not synthesis:
+        st.warning("⚠️ Synthesis data not available")
+        return
     
     # Executive Summary
     st.subheader("📋 Executive Summary")
@@ -186,7 +311,8 @@ def display_results(result: dict, company_name: str):
     
     st.markdown("---")
     
-    # Key Metrics
+    # Key Metrics Row
+    st.subheader("📊 Key Metrics")
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -194,7 +320,8 @@ def display_results(result: dict, company_name: str):
         st.metric(
             "Competitive Score",
             f"{score}/100",
-            help="Overall competitive strength"
+            delta=None,
+            help="Overall competitive strength in the market"
         )
     
     with col2:
@@ -203,7 +330,8 @@ def display_results(result: dict, company_name: str):
         st.metric(
             "Financial Health",
             f"{health_score}/100",
-            help="Financial stability and growth"
+            delta=None,
+            help="Financial stability and growth trajectory"
         )
     
     with col3:
@@ -212,7 +340,8 @@ def display_results(result: dict, company_name: str):
         st.metric(
             "Product-Market Fit",
             f"{pmf}/100",
-            help="How well product matches market needs"
+            delta=None,
+            help="How well the product meets market needs"
         )
     
     st.markdown("---")
@@ -222,9 +351,18 @@ def display_results(result: dict, company_name: str):
     overview = synthesis.get('company_overview', {})
     
     if overview:
-        st.write(f"**Background:** {overview.get('background', 'N/A')}")
-        st.write(f"**Size & Scale:** {overview.get('size_and_scale', 'N/A')}")
-        st.write(f"**Market Position:** {overview.get('market_position', 'N/A')}")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**Background**")
+            st.write(overview.get('background', 'N/A'))
+        
+        with col2:
+            st.markdown("**Market Position**")
+            st.write(overview.get('market_position', 'N/A'))
+        
+        st.markdown("**Size & Scale**")
+        st.write(overview.get('size_and_scale', 'N/A'))
     
     st.markdown("---")
     
@@ -235,54 +373,82 @@ def display_results(result: dict, company_name: str):
     col1, col2 = st.columns(2)
     
     with col1:
-        with st.expander("💪 Strengths", expanded=True):
+        # Strengths
+        with st.expander("💪 **Strengths**", expanded=True):
             strengths = swot.get('strengths', [])
             if strengths:
                 for s in strengths:
-                    st.write(f"✓ {s}")
+                    st.markdown(f"✅ {s}")
             else:
-                st.write("No data")
+                st.write("_No data available_")
         
-        with st.expander("🎯 Opportunities", expanded=True):
+        # Opportunities
+        with st.expander("🎯 **Opportunities**", expanded=True):
             opps = swot.get('opportunities', [])
             if opps:
                 for o in opps:
-                    st.write(f"✓ {o}")
+                    st.markdown(f"🔹 {o}")
             else:
-                st.write("No data")
+                st.write("_No data available_")
     
     with col2:
-        with st.expander("⚠️ Weaknesses", expanded=True):
+        # Weaknesses
+        with st.expander("⚠️ **Weaknesses**", expanded=True):
             weaknesses = swot.get('weaknesses', [])
             if weaknesses:
                 for w in weaknesses:
-                    st.write(f"⚠ {w}")
+                    st.markdown(f"⚠️ {w}")
             else:
-                st.write("No data")
+                st.write("_No data available_")
         
-        with st.expander("🚨 Threats", expanded=True):
+        # Threats
+        with st.expander("🚨 **Threats**", expanded=True):
             threats = swot.get('threats', [])
             if threats:
                 for t in threats:
-                    st.write(f"⚠ {t}")
+                    st.markdown(f"⚡ {t}")
             else:
-                st.write("No data")
+                st.write("_No data available_")
     
     st.markdown("---")
     
     # Product Analysis
-    st.subheader("🎨 Product Analysis")
+    st.subheader("🎨 Product & Offering Analysis")
     product_analysis = synthesis.get('product_analysis', {})
     
     if product_analysis:
-        st.write(f"**Core Offerings:** {product_analysis.get('core_offerings', 'N/A')}")
-        st.write(f"**Pricing Strategy:** {product_analysis.get('pricing_strategy', 'N/A')}")
+        col1, col2 = st.columns(2)
         
-        differentiators = product_analysis.get('differentiators', [])
-        if differentiators:
-            st.write("**Key Differentiators:**")
-            for d in differentiators:
-                st.write(f"- {d}")
+        with col1:
+            st.markdown("**Core Offerings**")
+            st.write(product_analysis.get('core_offerings', 'N/A'))
+            
+            st.markdown("**Pricing Strategy**")
+            st.write(product_analysis.get('pricing_strategy', 'N/A'))
+        
+        with col2:
+            st.markdown("**Key Differentiators**")
+            differentiators = product_analysis.get('differentiators', [])
+            if differentiators:
+                for d in differentiators:
+                    st.markdown(f"• {d}")
+            else:
+                st.write("_No data available_")
+    
+    st.markdown("---")
+    
+    # Financial Health
+    st.subheader("💰 Financial Health Assessment")
+    financial = synthesis.get('financial_health', {})
+    
+    if financial:
+        st.write(f"**Status:** {financial.get('status', 'Unknown')}")
+        st.write(f"**Growth Trajectory:** {financial.get('growth_trajectory', 'Unknown')}")
+        
+        # Health score visual
+        health_pct = financial.get('health_score', 50)
+        st.progress(health_pct / 100)
+        st.caption(f"Financial Health Score: {health_pct}/100")
     
     st.markdown("---")
     
@@ -292,16 +458,16 @@ def display_results(result: dict, company_name: str):
     
     if recommendations:
         for i, rec in enumerate(recommendations, 1):
-            st.write(f"**{i}.** {rec}")
+            st.markdown(f"**{i}.** {rec}")
     else:
-        st.write("No recommendations available")
+        st.write("_No recommendations available_")
     
     st.markdown("---")
     
-    # Download options
-    st.subheader("💾 Export Data")
+    # Export Section
+    st.subheader("💾 Export & Download")
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
         # JSON download
@@ -309,48 +475,96 @@ def display_results(result: dict, company_name: str):
         st.download_button(
             label="📥 Download JSON",
             data=json_data,
-            file_name=f"{company_name}_research.json",
-            mime="application/json"
+            file_name=f"{company_name.replace(' ', '_')}_research.json",
+            mime="application/json",
+            use_container_width=True
         )
     
     with col2:
-        # Text summary download
-        text_summary = f"""
-# Competitor Intelligence Report: {company_name}
-Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
-## Executive Summary
-{summary}
-
-## Competitive Score: {score}/100
-## Financial Health: {health_score}/100
-## Product-Market Fit: {pmf}/100
-
-## SWOT Analysis
-
-### Strengths
-{chr(10).join(f'- {s}' for s in strengths) if strengths else 'No data'}
-
-### Weaknesses
-{chr(10).join(f'- {w}' for w in weaknesses) if weaknesses else 'No data'}
-
-### Opportunities
-{chr(10).join(f'- {o}' for o in opps) if opps else 'No data'}
-
-### Threats
-{chr(10).join(f'- {t}' for t in threats) if threats else 'No data'}
-
-## Strategic Recommendations
-{chr(10).join(f'{i}. {r}' for i, r in enumerate(recommendations, 1)) if recommendations else 'No recommendations'}
-"""
+        # Text summary
+        text_summary = generate_text_report(result, company_name)
         st.download_button(
             label="📄 Download Report (TXT)",
             data=text_summary,
-            file_name=f"{company_name}_report.txt",
-            mime="text/plain"
+            file_name=f"{company_name.replace(' ', '_')}_report.txt",
+            mime="text/plain",
+            use_container_width=True
         )
+    
+    with col3:
+        # Copy to clipboard (JSON)
+        if st.button("📋 Copy JSON", use_container_width=True):
+            st.code(json_data, language="json")
+            st.success("JSON displayed above - use your browser to copy")
 
 
-# Run app
-if __name__ == "__main__":
-    pass
+def generate_text_report(result: dict, company_name: str) -> str:
+    """Generate text format report"""
+    
+    synthesis = result.get('synthesis', {})
+    swot = synthesis.get('swot_analysis', {})
+    
+    report = f"""
+{'='*60}
+COMPETITOR INTELLIGENCE REPORT
+{'='*60}
+
+Company: {company_name}
+Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+{'='*60}
+EXECUTIVE SUMMARY
+{'='*60}
+
+{synthesis.get('executive_summary', 'N/A')}
+
+{'='*60}
+KEY METRICS
+{'='*60}
+
+Competitive Score: {synthesis.get('competitive_score', 0)}/100
+Financial Health: {synthesis.get('financial_health', {}).get('health_score', 0)}/100
+Product-Market Fit: {synthesis.get('product_analysis', {}).get('product_market_fit_score', 0)}/100
+
+{'='*60}
+SWOT ANALYSIS
+{'='*60}
+
+STRENGTHS:
+{chr(10).join(f'  • {s}' for s in swot.get('strengths', ['N/A']))}
+
+WEAKNESSES:
+{chr(10).join(f'  • {w}' for w in swot.get('weaknesses', ['N/A']))}
+
+OPPORTUNITIES:
+{chr(10).join(f'  • {o}' for o in swot.get('opportunities', ['N/A']))}
+
+THREATS:
+{chr(10).join(f'  • {t}' for t in swot.get('threats', ['N/A']))}
+
+{'='*60}
+STRATEGIC RECOMMENDATIONS
+{'='*60}
+
+{chr(10).join(f'{i}. {r}' for i, r in enumerate(synthesis.get('strategic_recommendations', ['N/A']), 1))}
+
+{'='*60}
+END OF REPORT
+{'='*60}
+
+Generated by AI Competitor Intelligence
+Powered by open-source AI (Groq, LangChain, Streamlit)
+"""
+    
+    return report
+
+
+# Footer
+st.markdown("---")
+st.markdown("""
+<div style='text-align: center; color: #666; padding: 2rem 0;'>
+    <p><strong>AI Competitor Intelligence</strong></p>
+    <p>Powered by Groq • LangChain • Streamlit</p>
+    <p>100% Open Source • No Data Stored • Privacy First</p>
+</div>
+""", unsafe_allow_html=True)
