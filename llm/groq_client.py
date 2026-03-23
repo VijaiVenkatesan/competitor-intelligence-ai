@@ -3,39 +3,49 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from utils.config import settings
 from utils.logger import logger
 import json
-from typing import Optional, Dict, Any, List
+from typing import Dict, Any
 import os
-from collections import Counter
 
 
 class GroqClient:
-    """Enhanced Groq client with multi-model support for optimal results"""
+    """Multi-model Groq client with user-selectable models"""
     
-    # Model configurations - All FREE on Groq!
+    # All available models
     MODELS = {
-        "fast": "llama-3.3-70b-versatile",          # Fast, balanced (DEFAULT)
-        "smart": "llama-3.1-70b-specdec",           # Deep reasoning & analysis
-        "long": "mixtral-8x7b-32768",               # Long context (32K tokens)
-        "creative": "llama-3.3-70b-versatile",      # Creative synthesis
-        "structured": "llama-3.3-70b-versatile",    # Reliable JSON output
+        # Auto-optimize uses best per task
+        "auto": {
+            "fast": "llama-3.3-70b-versatile",
+            "smart": "llama-3.3-70b-versatile",
+            "structured": "llama-3.3-70b-versatile",
+        },
+        # Single model strategies
+        "llama-3.3-fast": "llama-3.3-70b-versatile",
+        "llama-3.3-quality": "llama-3.3-70b-versatile",
+        "mixtral-8x7b": "mixtral-8x7b-32768",
     }
     
-    def __init__(self, default_model: str = "fast"):
+    def __init__(self, strategy: str = "auto"):
         api_key = os.getenv("GROQ_API_KEY") or settings.groq_api_key
         if not api_key:
-            raise ValueError("GROQ_API_KEY not found in environment")
+            raise ValueError("GROQ_API_KEY not found")
         
         self.client = Groq(api_key=api_key)
-        self.default_model = self.MODELS.get(default_model, self.MODELS["fast"])
+        self.strategy = strategy
         self.max_tokens = 8000
     
-    def get_model(self, model_type: str = "fast") -> str:
-        """Get model name by type"""
-        return self.MODELS.get(model_type, self.default_model)
+    def get_model(self, task_type: str = "fast") -> str:
+        """Get model based on strategy and task"""
+        
+        if self.strategy == "auto":
+            # Use optimal model per task
+            return self.MODELS["auto"].get(task_type, self.MODELS["auto"]["fast"])
+        else:
+            # Use single selected model
+            return self.MODELS.get(self.strategy, "llama-3.3-70b-versatile")
     
     @retry(
         stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=4, max=10)
+        wait=wait_exponential(multiplier=1, min=2, max=10)
     )
     async def generate(
         self,
@@ -43,11 +53,11 @@ class GroqClient:
         system_prompt: str = "You are a helpful AI assistant.",
         temperature: float = 0.7,
         json_mode: bool = False,
-        model_type: str = "fast"
+        task_type: str = "fast"
     ) -> str:
-        """Generate completion with retry logic and model selection"""
+        """Generate with automatic model selection"""
         
-        model = self.get_model(model_type)
+        model = self.get_model(task_type)
         
         try:
             response = self.client.chat.completions.create(
@@ -67,7 +77,7 @@ class GroqClient:
             return content
             
         except Exception as e:
-            logger.error(f"❌ Groq API error with {model}: {e}")
+            logger.error(f"❌ Model {model} failed: {e}")
             raise
     
     async def generate_structured(
@@ -75,93 +85,29 @@ class GroqClient:
         prompt: str,
         system_prompt: str,
         schema: Dict[str, Any],
-        model_type: str = "structured"
+        task_type: str = "structured"
     ) -> Dict[str, Any]:
-        """Generate structured JSON output with schema validation"""
+        """Generate structured JSON"""
         
         enhanced_system = f"""{system_prompt}
 
-You must respond with valid JSON matching this schema:
-{json.dumps(schema, indent=2)}
-
-Ensure all required fields are present and properly formatted."""
+Respond with valid JSON matching this schema:
+{json.dumps(schema, indent=2)}"""
         
         response = await self.generate(
             prompt=prompt,
             system_prompt=enhanced_system,
             temperature=0.3,
             json_mode=True,
-            model_type=model_type
+            task_type=task_type
         )
         
         try:
             return json.loads(response)
         except json.JSONDecodeError as e:
-            logger.error(f"❌ Failed to parse JSON: {e}")
-            return {"error": "Failed to parse response", "raw": response[:500]}
-    
-    async def generate_with_fallback(
-        self,
-        prompt: str,
-        system_prompt: str,
-        primary_model: str = "fast",
-        fallback_model: str = "smart",
-        **kwargs
-    ) -> str:
-        """Try primary model, fallback to secondary if fails"""
-        
-        try:
-            return await self.generate(
-                prompt=prompt,
-                system_prompt=system_prompt,
-                model_type=primary_model,
-                **kwargs
-            )
-        except Exception as e:
-            logger.warning(f"⚠️ Primary model {primary_model} failed, trying {fallback_model}")
-            return await self.generate(
-                prompt=prompt,
-                system_prompt=system_prompt,
-                model_type=fallback_model,
-                **kwargs
-            )
-    
-    async def generate_with_ensemble(
-        self,
-        prompt: str,
-        system_prompt: str,
-        models: List[str] = ["fast", "smart"],
-        **kwargs
-    ) -> str:
-        """Generate using multiple models and return consensus (advanced)"""
-        
-        results = []
-        
-        for model_type in models:
-            try:
-                result = await self.generate(
-                    prompt=prompt,
-                    system_prompt=system_prompt,
-                    model_type=model_type,
-                    **kwargs
-                )
-                results.append(result)
-                logger.info(f"✅ Ensemble: Got result from {model_type}")
-            except Exception as e:
-                logger.warning(f"⚠️ Ensemble: {model_type} failed: {e}")
-        
-        if not results:
-            raise Exception("❌ All models failed in ensemble")
-        
-        # Return most common result (simple voting)
-        if len(results) > 1:
-            counter = Counter(results)
-            most_common = counter.most_common(1)[0][0]
-            logger.info(f"🎯 Ensemble: Using consensus result")
-            return most_common
-        
-        return results[0]
+            logger.error(f"❌ JSON parse failed: {e}")
+            return {"error": "Parse failed"}
 
 
-# Singleton instance
-groq_client = GroqClient()
+# Will be initialized with strategy in orchestrator
+groq_client = None
