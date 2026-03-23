@@ -66,7 +66,7 @@ class SynthesisAgent(BaseAgent):
             prompt=prompt,
             system_prompt="You are a senior strategy consultant. Provide comprehensive, actionable analysis with deep insights.",
             schema=SYNTHESIS_SCHEMA,
-            model_type="smart"  # ✅ Most intelligent model for strategic thinking
+            model_type=self._get_model_type("structured")
         )
         
         return synthesis
