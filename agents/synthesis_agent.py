@@ -19,10 +19,9 @@ class SynthesisAgent(BaseAgent):
         agent_outputs = context.get('agent_outputs', {})
         
         try:
-            # Format agent outputs for LLM
             outputs_summary = self._format_agent_outputs(agent_outputs)
             
-            # Generate synthesis
+            # ✅ USE "smart" model for complex strategic synthesis
             synthesis = await self._generate_synthesis(
                 company_name,
                 outputs_summary
@@ -31,7 +30,7 @@ class SynthesisAgent(BaseAgent):
             return self._create_result(True, synthesis)
             
         except Exception as e:
-            logger.error(f"Synthesis failed: {e}")
+            logger.error(f"❌ Synthesis failed: {e}")
             return self._create_result(
                 True,
                 self._create_fallback_synthesis(company_name)
@@ -55,17 +54,19 @@ class SynthesisAgent(BaseAgent):
         company_name: str,
         outputs_summary: str
     ) -> Dict[str, Any]:
-        """Generate comprehensive synthesis"""
+        """Generate comprehensive synthesis using SMART model"""
         
         prompt = SYNTHESIS_PROMPT.format(
             company_name=company_name,
-            agent_outputs=outputs_summary[:8000]  # Token limit
+            agent_outputs=outputs_summary[:8000]
         )
         
+        # ✅ USE "smart" model - Best for complex reasoning and strategic synthesis
         synthesis = await self.llm.generate_structured(
             prompt=prompt,
-            system_prompt="You are a senior strategy consultant. Provide comprehensive, actionable analysis.",
-            schema=SYNTHESIS_SCHEMA
+            system_prompt="You are a senior strategy consultant. Provide comprehensive, actionable analysis with deep insights.",
+            schema=SYNTHESIS_SCHEMA,
+            model_type="smart"  # ✅ Most intelligent model for strategic thinking
         )
         
         return synthesis
@@ -98,9 +99,9 @@ class SynthesisAgent(BaseAgent):
                 "health_score": 50
             },
             "strategic_recommendations": [
-                "Conduct deeper research",
-                "Verify data sources",
-                "Update analysis with more information"
+                "Conduct deeper research with additional data sources",
+                "Verify information through official channels",
+                "Re-run analysis when more data becomes available"
             ],
             "competitive_score": 50
         }
