@@ -34,7 +34,7 @@ Return as JSON with fields: company_type, funding_estimate, growth_stage, health
                 system_prompt="You are a financial analyst. Provide realistic estimates based on publicly known information.",
                 temperature=0.3,
                 json_mode=True,
-                model_type="fast"  # ✅ Fast model for quick data
+                model_type=self._get_model_type("structured")
             )
             
             import json
