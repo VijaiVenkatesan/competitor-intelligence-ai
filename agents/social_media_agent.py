@@ -20,15 +20,13 @@ class SocialMediaAgent(BaseAgent):
         try:
             social_data = {}
             
-            # Reddit analysis (public API, no auth needed)
             reddit_data = await self._analyze_reddit(company_name)
             social_data['reddit'] = reddit_data
             
-            # HackerNews mentions
             hn_data = await self._analyze_hackernews(company_name)
             social_data['hackernews'] = hn_data
             
-            # Synthesize with LLM
+            # ✅ USE "fast" model for quick sentiment analysis
             synthesis = await self._synthesize_social_intelligence(
                 company_name,
                 social_data
@@ -37,8 +35,7 @@ class SocialMediaAgent(BaseAgent):
             return self._create_result(True, synthesis)
             
         except Exception as e:
-            logger.error(f"Social media analysis failed: {e}")
-            # Return neutral sentiment on error
+            logger.error(f"❌ Social media analysis failed: {e}")
             return self._create_result(
                 True,
                 {
@@ -66,7 +63,7 @@ class SocialMediaAgent(BaseAgent):
                     posts = data.get('data', {}).get('children', [])
                     
                     mentions = []
-                    for post in posts[:5]:  # Top 5
+                    for post in posts[:5]:
                         post_data = post.get('data', {})
                         mentions.append({
                             'title': post_data.get('title', ''),
@@ -80,7 +77,7 @@ class SocialMediaAgent(BaseAgent):
                         'found': True
                     }
         except Exception as e:
-            logger.warning(f"Reddit analysis failed: {e}")
+            logger.warning(f"⚠️ Reddit analysis failed: {e}")
         
         return {'found': False, 'mentions_count': 0}
     
@@ -114,7 +111,7 @@ class SocialMediaAgent(BaseAgent):
                         'found': True
                     }
         except Exception as e:
-            logger.warning(f"HackerNews analysis failed: {e}")
+            logger.warning(f"⚠️ HackerNews analysis failed: {e}")
         
         return {'found': False, 'mentions_count': 0}
     
@@ -131,15 +128,17 @@ class SocialMediaAgent(BaseAgent):
         prompt += f"\n\nCollected Data:\n{str(social_data)[:3000]}"
         
         try:
+            # ✅ USE "fast" model - quick sentiment analysis
             synthesis = await self.llm.generate_structured(
                 prompt=prompt,
                 system_prompt="You are a social media analyst. If data is limited, provide general insights.",
-                schema=SOCIAL_SENTIMENT_SCHEMA
+                schema=SOCIAL_SENTIMENT_SCHEMA,
+                model_type="fast"  # ✅ Optimized for speed
             )
             return synthesis
             
         except Exception as e:
-            logger.error(f"Social synthesis failed: {e}")
+            logger.error(f"❌ Social synthesis failed: {e}")
             return {
                 "overall_sentiment": "neutral",
                 "sentiment_score": 50,
