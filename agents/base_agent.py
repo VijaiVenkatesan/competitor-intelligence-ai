@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any
 from utils.logger import logger
-from llm.groq_client import groq_client
 
 
 class BaseAgent(ABC):
@@ -9,8 +8,12 @@ class BaseAgent(ABC):
     
     def __init__(self, name: str):
         self.name = name
-        self.llm = groq_client
-        self.preferred_model = None  # ✅ NEW: Can be overridden
+    
+    @property
+    def llm(self):
+        """Get LLM client dynamically (not at import time)"""
+        from llm.groq_client import groq_client
+        return groq_client
     
     @abstractmethod
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
@@ -19,7 +22,7 @@ class BaseAgent(ABC):
     
     async def _log_execution(self, context: Dict[str, Any]):
         """Log agent execution"""
-        logger.info(f"[{self.name}] Executing with context keys: {list(context.keys())}")
+        logger.info(f"[{self.name}] Executing...")
     
     def _create_result(
         self,
@@ -29,7 +32,6 @@ class BaseAgent(ABC):
         metadata: Dict = None
     ) -> Dict[str, Any]:
         """Standard result format"""
-        
         return {
             'agent': self.name,
             'success': success,
@@ -37,7 +39,3 @@ class BaseAgent(ABC):
             'error': error,
             'metadata': metadata or {}
         }
-    
-    def _get_model_type(self, default: str) -> str:
-        """Get model type - uses preference if set, otherwise default"""
-        return self.preferred_model if self.preferred_model else default
