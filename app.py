@@ -256,7 +256,8 @@ def display_results(result: dict, company_name: str):
             data=json_data,
             file_name=f"{company_name.replace(' ', '_')}_research.json",
             mime="application/json",
-            use_container_width=True
+            use_container_width=True,
+            key=f"download_json_{company_name.replace(' ', '_')}"
         )
     
     with col2:
@@ -267,12 +268,13 @@ def display_results(result: dict, company_name: str):
             data=text_summary,
             file_name=f"{company_name.replace(' ', '_')}_report.txt",
             mime="text/plain",
-            use_container_width=True
+            use_container_width=True,
+            key=f"download_txt_{company_name.replace(' ', '_')}"
         )
     
     with col3:
         # Copy to clipboard (JSON)
-        if st.button("📋 Copy JSON", use_container_width=True):
+        if st.button("📋 Copy JSON", use_container_width=True, key=f"copy_json_{company_name.replace(' ', '_')}"):
             st.code(json_data, language="json")
             st.success("JSON displayed above - use your browser to copy")
 
