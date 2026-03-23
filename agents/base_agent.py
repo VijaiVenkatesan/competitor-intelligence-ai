@@ -10,6 +10,7 @@ class BaseAgent(ABC):
     def __init__(self, name: str):
         self.name = name
         self.llm = groq_client
+        self.preferred_model = None  # ✅ NEW: Can be overridden
     
     @abstractmethod
     async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
@@ -36,3 +37,7 @@ class BaseAgent(ABC):
             'error': error,
             'metadata': metadata or {}
         }
+    
+    def _get_model_type(self, default: str) -> str:
+        """Get model type - uses preference if set, otherwise default"""
+        return self.preferred_model if self.preferred_model else default
