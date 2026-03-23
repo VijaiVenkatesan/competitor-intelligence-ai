@@ -23,11 +23,10 @@ class WebResearchAgent(BaseAgent):
         
         try:
             # Step 1: Find company website
-            logger.info(f"Finding website for {company_name}...")
+            logger.info(f"🔍 Finding website for {company_name}...")
             website_url = await scraper.find_company_website(company_name)
             
             if not website_url:
-                # Return minimal data if website not found
                 return self._create_result(
                     True,
                     {
@@ -39,11 +38,11 @@ class WebResearchAgent(BaseAgent):
                 )
             
             # Step 2: Scrape key pages
-            logger.info(f"Scraping pages from {website_url}...")
+            logger.info(f"📄 Scraping pages from {website_url}...")
             pages_data = await self._scrape_company_pages(website_url)
             
-            # Step 3: Extract structured data with LLM
-            logger.info("Extracting structured information...")
+            # Step 3: Extract structured data with LLM (using "structured" model)
+            logger.info(f"🧠 Extracting structured information...")
             structured_data = await self._extract_structured_info(
                 company_name,
                 pages_data
@@ -56,8 +55,7 @@ class WebResearchAgent(BaseAgent):
             )
             
         except Exception as e:
-            logger.error(f"Web research failed: {e}")
-            # Return partial success with error note
+            logger.error(f"❌ Web research failed: {e}")
             return self._create_result(
                 True,
                 {
@@ -70,30 +68,27 @@ class WebResearchAgent(BaseAgent):
     async def _scrape_company_pages(self, base_url: str) -> List[Dict[str, Any]]:
         """Scrape important pages from company website"""
         
-        # Common page patterns
         page_urls = [
-            base_url,  # Homepage
+            base_url,
             f"{base_url}/about",
             f"{base_url}/pricing",
-            f"{base_url}/products",
         ]
         
         scraped_pages = []
-        html_results = await scraper.scrape_multiple(page_urls[:3])  # Limit to 3 pages
+        html_results = await scraper.scrape_multiple(page_urls[:3])
         
         for url, html in html_results.items():
             if html:
-                # Extract content
                 main_content = extractor.extract_main_content(html, url)
                 metadata = extractor.extract_metadata(html, url)
                 
                 if main_content:
                     scraped_pages.append({
                         'url': url,
-                        'content': main_content[:3000],  # Limit content size
+                        'content': main_content[:3000],
                         'metadata': metadata
                     })
-                    logger.info(f"Extracted content from {url}")
+                    logger.info(f"✅ Extracted content from {url}")
         
         return scraped_pages
     
@@ -104,7 +99,6 @@ class WebResearchAgent(BaseAgent):
     ) -> Dict[str, Any]:
         """Use LLM to extract structured information"""
         
-        # Combine page contents
         if pages_data:
             combined_content = "\n\n".join([
                 f"URL: {page['url']}\n{page['content'][:1500]}"
@@ -115,20 +109,21 @@ class WebResearchAgent(BaseAgent):
         
         prompt = WEB_RESEARCH_PROMPT.format(
             company_name=company_name,
-            scraped_content=combined_content[:6000]  # Stay within token limits
+            scraped_content=combined_content[:6000]
         )
         
         try:
+            # ✅ USE "structured" model for reliable JSON extraction
             structured_data = await self.llm.generate_structured(
                 prompt=prompt,
                 system_prompt="You are an expert at extracting company information. If data is not available, make reasonable inferences or state 'Unknown'.",
-                schema=COMPANY_OVERVIEW_SCHEMA
+                schema=COMPANY_OVERVIEW_SCHEMA,
+                model_type="structured"  # ✅ Optimized model choice
             )
             return structured_data
             
         except Exception as e:
-            logger.error(f"LLM extraction failed: {e}")
-            # Return minimal valid structure
+            logger.error(f"❌ LLM extraction failed: {e}")
             return {
                 "company_name": company_name,
                 "tagline": "Unable to extract",
