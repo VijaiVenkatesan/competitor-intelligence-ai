@@ -37,7 +37,7 @@ Return as JSON with fields: core_offerings, key_features (array), pricing_strate
                 system_prompt="You are a product analyst. Provide realistic analysis based on known information.",
                 temperature=0.4,
                 json_mode=True,
-                model_type="structured"  # ✅ Best for structured product data
+                model_type=self._get_model_type("structured")
             )
             
             import json
