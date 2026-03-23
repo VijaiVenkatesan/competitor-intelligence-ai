@@ -118,7 +118,7 @@ class WebResearchAgent(BaseAgent):
                 prompt=prompt,
                 system_prompt="You are an expert at extracting company information. If data is not available, make reasonable inferences or state 'Unknown'.",
                 schema=COMPANY_OVERVIEW_SCHEMA,
-                model_type="structured"  # ✅ Optimized model choice
+                model_type=self._get_model_type("structured")  # ✅ Optimized model choice
             )
             return structured_data
             
