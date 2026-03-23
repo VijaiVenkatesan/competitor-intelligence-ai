@@ -16,9 +16,6 @@ class FinancialAgent(BaseAgent):
         company_name = context.get('company_name')
         
         try:
-            # For MVP: Use LLM general knowledge
-            # In production: Integrate SEC API, Crunchbase, etc.
-            
             prompt = f"""Provide financial analysis for {company_name} based on public knowledge.
 
 Include:
@@ -31,11 +28,13 @@ Include:
 
 Return as JSON with fields: company_type, funding_estimate, growth_stage, health_score (0-100), assessment"""
 
+            # ✅ USE "fast" model for quick financial extraction
             response = await self.llm.generate(
                 prompt=prompt,
                 system_prompt="You are a financial analyst. Provide realistic estimates based on publicly known information.",
                 temperature=0.3,
-                json_mode=True
+                json_mode=True,
+                model_type="fast"  # ✅ Fast model for quick data
             )
             
             import json
@@ -44,7 +43,7 @@ Return as JSON with fields: company_type, funding_estimate, growth_stage, health
             return self._create_result(True, financial_data)
             
         except Exception as e:
-            logger.error(f"Financial analysis failed: {e}")
+            logger.error(f"❌ Financial analysis failed: {e}")
             return self._create_result(
                 True,
                 {
