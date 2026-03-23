@@ -278,6 +278,34 @@ def display_results(result: dict, company_name: str):
 
 
 # ========================================
+# CHECK API KEY (from Streamlit Secrets)
+# ========================================
+
+# Check if API key exists in secrets
+if "GROQ_API_KEY" not in st.secrets:
+    st.error("🔑 **API Key Not Configured**")
+    st.markdown("""
+    ### Setup Required
+    
+    The Groq API key is missing from Streamlit Secrets.
+    
+    **To fix this:**
+    1. Go to your Streamlit Cloud dashboard
+    2. Click on your app
+    3. Go to **Settings** → **Secrets**
+    4. Add this:
+    ```toml
+    GROQ_API_KEY = "your_groq_api_key_here"
+    ```
+    5. Get a free API key at [console.groq.com](https://console.groq.com)
+    6. Save and reboot the app
+    """)
+    st.stop()
+
+# Set environment variable from secrets
+os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+
+# ========================================
 # MAIN APP UI
 # ========================================
 
@@ -316,33 +344,10 @@ st.markdown("---")
 
 # Sidebar Configuration
 with st.sidebar:
-    st.header("⚙️ Configuration")
+    st.header("⚙️ Settings")
     
-    # API Key input
-    groq_api_key = st.text_input(
-        "Groq API Key",
-        type="password",
-        help="Get your free API key at console.groq.com",
-        value=os.getenv("GROQ_API_KEY", "")
-    )
-    
-    if not groq_api_key:
-        st.error("⚠️ Groq API Key Required")
-        st.markdown("""
-        **Get your FREE API key:**
-        1. Visit [console.groq.com](https://console.groq.com)
-        2. Sign up (takes 30 seconds)
-        3. Copy your API key
-        4. Paste it above
-        
-        **It's 100% free!** No credit card needed.
-        """)
-        st.stop()
-    
-    # Set environment variable
-    os.environ["GROQ_API_KEY"] = groq_api_key
-    
-    st.success("✅ API Key configured")
+    # API Status (no password input!)
+    st.success("🔑 API Key: Configured ✅")
     
     st.markdown("---")
     
@@ -369,6 +374,17 @@ with st.sidebar:
     
     st.markdown("---")
     
+    # Stats (if available)
+    if 'latest_result' in st.session_state:
+        st.subheader("📊 Quick Stats")
+        result = st.session_state['latest_result']
+        synthesis = result.get('synthesis', {})
+        
+        st.metric("Competitive Score", f"{synthesis.get('competitive_score', 0)}/100")
+        st.metric("Financial Health", f"{synthesis.get('financial_health', {}).get('health_score', 0)}/100")
+    
+    st.markdown("---")
+    
     # Info section
     with st.expander("ℹ️ About This Tool"):
         st.markdown("""
@@ -385,8 +401,8 @@ with st.sidebar:
         - 100% Open Source
         
         **Privacy:**
-        - Your API key stays local
-        - No data stored on servers
+        - API key stored securely in Streamlit Secrets
+        - No data stored on our servers
         - All processing via Groq API
         """)
     
