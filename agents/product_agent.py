@@ -31,11 +31,13 @@ Provide analysis on:
 
 Return as JSON with fields: core_offerings, key_features (array), pricing_strategy, target_persona, differentiators (array), product_market_fit_score"""
 
+            # ✅ USE "structured" model for reliable product data extraction
             response = await self.llm.generate(
                 prompt=prompt,
                 system_prompt="You are a product analyst. Provide realistic analysis based on known information.",
                 temperature=0.4,
-                json_mode=True
+                json_mode=True,
+                model_type="structured"  # ✅ Best for structured product data
             )
             
             import json
@@ -44,7 +46,7 @@ Return as JSON with fields: core_offerings, key_features (array), pricing_strate
             return self._create_result(True, product_data)
             
         except Exception as e:
-            logger.error(f"Product analysis failed: {e}")
+            logger.error(f"❌ Product analysis failed: {e}")
             return self._create_result(
                 True,
                 {
