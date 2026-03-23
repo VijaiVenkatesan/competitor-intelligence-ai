@@ -520,9 +520,18 @@ with tab1:
                     
                     # Run research
                     try:
+                        # Map UI strategy to internal code
+                        strategy_mapping = {
+                            "🚀 Auto-Optimize (Recommended)": "auto",
+                            "⚡ Speed Priority": "speed",
+                            "🧠 Quality Priority": "quality",
+                            "⚖️ Balanced": "balanced"
+                        }
+                        
                         result = asyncio.run(run_research(
                             company_name=company_name,
                             depth=depth,
+                            model_strategy=strategy_mapping[model_strategy],  # ✅ ADDED
                             progress_callback=progress_callback
                         ))
                         
