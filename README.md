@@ -7,7 +7,7 @@
 
 ## 🚀 Try It Live
 
-**Deploy your own in 5 minutes!**
+https://competitor-intelligence-ai.streamlit.app/
 
 ## ✨ Features
 
@@ -38,7 +38,7 @@ Visit [console.groq.com](https://console.groq.com) and create a free account
 
 ## 🛠️ Tech Stack
 
-- **LLM**: Groq (Llama 3.1 70B) - Lightning fast inference
+- **LLM**: Groq (Llama 3.1 8B) - ⚡ 10x faster
 - **Framework**: LangChain - Multi-agent orchestration
 - **Scraping**: BeautifulSoup, Trafilatura - Web data extraction
 - **UI**: Streamlit - Beautiful, interactive interface
